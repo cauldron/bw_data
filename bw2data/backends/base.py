@@ -526,7 +526,7 @@ class SQLiteBackend(ProcessedDataStore):
 
             if "output" not in exchange:
                 exchange["output"] = (ds["database"], ds["code"])
-            exchanges.append(dict_as_exchangedataset(exchange))
+            exchanges.append(dict_as_exchangedataset(exchange, add_snowflake_id=True))
 
             # Query gets passed as INSERT INTO x VALUES ('?', '?'...)
             # SQLite3 has a limit of 999 variables,

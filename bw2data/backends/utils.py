@@ -85,8 +85,8 @@ def dict_as_activitydataset(ds: Any, add_snowflake_id: bool = False) -> dict:
     return val
 
 
-def dict_as_exchangedataset(ds: Any) -> dict:
-    return {
+def dict_as_exchangedataset(ds: Any, add_snowflake_id: bool = False) -> dict:
+    val = {
         "data": ds,
         "input_database": ds["input"][0],
         "input_code": ds["input"][1],
@@ -94,6 +94,11 @@ def dict_as_exchangedataset(ds: Any) -> dict:
         "output_code": ds["output"][1],
         "type": ds["type"],
     }
+    # Use during `insert_many` calls as these skip auto id generation because they don't call
+    # `.save()`
+    if add_snowflake_id:
+        val["id"] = next(snowflake_id_generator)
+    return val
 
 
 def get_obj_as_dict(cls: SignaledDataset, obj_id: Optional[int]) -> dict:
