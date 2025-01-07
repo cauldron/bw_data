@@ -40,6 +40,7 @@ dependencies = [
     "peewee>=3.9.4",
     "pint<0.24",
     "platformdirs",
+    "psycopg2",
     "pydantic-settings",
     "rapidfuzz; sys_platform != 'emscripten'",
     "scipy",
@@ -62,7 +63,7 @@ tracker = "https://github.com/brightway-lca/bw2data/issues"
 # seems to work, at least for now
 testing = [
     "bw2data",
-    "bw2calc>=2.0.dev17",
+    "bw2calc>=2.0",
     "pytest",
     "pytest-cov",
     "python-coveralls"

@@ -1,7 +1,9 @@
 import json
 import pickle
+import os
+from pathlib import Path
 
-from peewee import BlobField, SqliteDatabase, TextField
+from peewee import BlobField, SqliteDatabase, TextField, PostgresqlDatabase
 
 from bw2data.logs import stdout_feedback_logger
 
@@ -15,13 +17,38 @@ class PickleField(BlobField):
 
 
 class SubstitutableDatabase:
-    def __init__(self, filepath, tables):
+    def __init__(self, filepath: Path, tables: list):
         self._filepath = filepath
         self._tables = tables
         self._database = self._create_database()
 
+    def check_postgres(self) -> dict:
+        if not os.environ.get('BW_DATA_POSTGRES'):
+            return {}
+        return {
+            "db": os.environ['BW_DATA_POSTGRES_DATABASE'],
+            "user": os.environ.get('BW_DATA_POSTGRES_USER'),
+            "password": os.environ.get('BW_DATA_POSTGRES_PASSWORD'),
+            "port": int(os.environ.get('BW_DATA_POSTGRES_PORT', 5432)),
+            "url": os.environ.get('BW_DATA_POSTGRES_URL', "localhost"),
+        }
+
     def _create_database(self):
-        db = SqliteDatabase(self._filepath)
+        pg_config = self.check_postgres()
+        if not pg_config:
+            db = SqliteDatabase(self._filepath)
+            stdout_feedback_logger.info("Using SQLite driver")
+        else:
+            db = PostgresqlDatabase(
+                pg_config['db'],
+                user=pg_config['user'],
+                password=pg_config['password'],
+                host=pg_config['url'],
+                port=pg_config['port'],
+            )
+            stdout_feedback_logger.info(
+                f"Using Postgres driver with database {pg_config['db']} and user {pg_config['user']}"
+            )
         for model in self._tables:
             model.bind(db, bind_refs=False, bind_backrefs=False)
         db.connect()
