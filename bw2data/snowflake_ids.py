@@ -1,6 +1,6 @@
 import uuid
 
-from peewee import IntegerField
+from peewee import BigIntegerField
 from snowflake import SnowflakeGenerator
 
 from bw2data.signals import SignaledDataset
@@ -25,7 +25,7 @@ snowflake_id_generator = SnowflakeGenerator(instance=uuid.getnode() % 1024, epoc
 
 
 class SnowflakeIDBaseClass(SignaledDataset):
-    id = IntegerField(primary_key=True)
+    id = BigIntegerField(primary_key=True)
 
     def save(self, **kwargs):
         if self.id is None:

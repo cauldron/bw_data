@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
 import deepdiff
 import wrapt
 from bw_processing import safe_filename
-from peewee import SQL, BooleanField, DoesNotExist, IntegerField, Model, SqliteDatabase, TextField
+from peewee import SQL, BooleanField, DoesNotExist, BigIntegerField, Model, SqliteDatabase, TextField
 from platformdirs import PlatformDirs
 
 import bw2data.signals as bw2signals
@@ -46,8 +46,8 @@ def lockable():
 
 class ProjectDataset(Model):
     # Event sourcing
-    revision = IntegerField(null=True)
     is_sourced = BooleanField(default=False, constraints=[SQL("DEFAULT false")])
+    revision = BigIntegerField(null=True)
 
     data = PickleField()
     name = TextField(index=True, unique=True)
