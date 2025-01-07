@@ -46,8 +46,8 @@ def lockable():
 
 class ProjectDataset(Model):
     # Event sourcing
-    is_sourced = BooleanField(default=False, constraints=[SQL("DEFAULT 0")])
     revision = IntegerField(null=True)
+    is_sourced = BooleanField(default=False, constraints=[SQL("DEFAULT false")])
 
     data = PickleField()
     name = TextField(index=True, unique=True)
@@ -55,7 +55,7 @@ class ProjectDataset(Model):
     # But for backwards compatibility we need a default `True` value
     # and this hack is the recommended way to get this behaviour.
     # See https://docs.peewee-orm.com/en/latest/peewee/models.html?highlight=table%20generation
-    full_hash = BooleanField(default=True, constraints=[SQL("DEFAULT 1")])
+    full_hash = BooleanField(default=True, constraints=[SQL("DEFAULT true")])
 
     def __str__(self):
         return "Project: {}".format(self.name)
