@@ -26,14 +26,7 @@ from bw2data.errors import (
     UntypedExchange,
     WrongDatabase,
 )
-from bw2data.parameters import (
-    ActivityParameter,
-    DatabaseParameter,
-    ParameterizedExchange,
-    parameters,
-)
 from bw2data.snowflake_ids import EPOCH_START_MS
-from bw2data.tests import bw2test
 
 from .fixtures import biosphere
 from .fixtures import food as food_data
@@ -41,8 +34,7 @@ from .fixtures import get_naughty
 
 
 @pytest.fixture
-@bw2test
-def food():
+def food(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     d = Database("food")
@@ -57,8 +49,7 @@ def test_food(food):
 ### Basic functions
 
 
-@bw2test
-def test_get_code():
+def test_get_code(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     activity = d.get("1")
@@ -67,8 +58,7 @@ def test_get_code():
     assert activity.id > EPOCH_START_MS
 
 
-@bw2test
-def test_get_kwargs():
+def test_get_kwargs(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     activity = d.get(name="an emission")
@@ -77,8 +67,7 @@ def test_get_kwargs():
     assert activity.id > EPOCH_START_MS
 
 
-@bw2test
-def test_iter():
+def test_iter(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     activity = next(iter(d))
@@ -86,8 +75,7 @@ def test_iter():
     assert activity["name"] in ("an emission", "another emission")
 
 
-@bw2test
-def test_get_random():
+def test_get_random(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     activity = d.random()
@@ -111,8 +99,7 @@ def test_copy_metadata(food):
     assert databases["repas"]["custom"] == "something"
 
 
-@bw2test
-def test_copy_does_deepcopy():
+def test_copy_does_deepcopy(bw_test_fixture):
     data = {
         ("old name", "1"): {
             "exchanges": [{"input": ("old name", "1"), "amount": 1.0, "type": "technosphere"}]
@@ -127,16 +114,14 @@ def test_copy_does_deepcopy():
     assert list(d.load().values())[0]["exchanges"][0]["input"] == ("old name", "1")
 
 
-@bw2test
-def test_raise_wrong_database():
+def test_raise_wrong_database(bw_test_fixture):
     data = {("foo", "1"): {}}
     d = Database("bar")
     with pytest.raises(WrongDatabase):
         d.write(data)
 
 
-@bw2test
-def test_deletes_from_database():
+def test_deletes_from_database(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     assert "biosphere" in databases
@@ -153,8 +138,7 @@ def test_deletes_from_database():
     ) == (0,)
 
 
-@bw2test
-def test_deletes_from_calculation_setups():
+def test_deletes_from_calculation_setups(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
 
@@ -165,16 +149,14 @@ def test_deletes_from_calculation_setups():
     assert calculation_setups["foo"]["inv"] == []
 
 
-@bw2test
-def test_delete_warning():
+def test_delete_warning(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     with pytest.warns(UserWarning):
         d.delete()
 
 
-@bw2test
-def test_relabel_data():
+def test_relabel_data(bw_test_fixture):
     old_data = {
         ("old and boring", "1"): {
             "exchanges": [
@@ -214,8 +196,7 @@ def test_relabel_data():
 ### Metadata
 
 
-@bw2test
-def test_find_graph_dependents():
+def test_find_graph_dependents(bw_test_fixture):
     databases["one"] = {"depends": ["two", "three"]}
     databases["two"] = {"depends": ["four", "five"]}
     databases["three"] = {"depends": ["four"]}
@@ -232,16 +213,14 @@ def test_find_graph_dependents():
     }
 
 
-@bw2test
-def test_register():
+def test_register(bw_test_fixture):
     database = Database("testy")
     database.register()
     assert "testy" in databases
     assert "depends" in databases["testy"]
 
 
-@bw2test
-def test_deregister():
+def test_deregister(bw_test_fixture):
     d = Database("food")
     d.register()
     assert "food" in databases
@@ -249,8 +228,7 @@ def test_deregister():
     assert "food" not in databases
 
 
-@bw2test
-def test_write_sets_databases_number_attribute():
+def test_write_sets_databases_number_attribute(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     assert databases["biosphere"]["number"] == len(biosphere)
@@ -259,8 +237,7 @@ def test_write_sets_databases_number_attribute():
 ### Processed arrays
 
 
-@bw2test
-def test_process_unknown_object():
+def test_process_unknown_object(bw_test_fixture):
     database = Database("testy")
     data = {
         ("testy", "A"): {},
@@ -278,24 +255,21 @@ def test_process_unknown_object():
 ### String handling
 
 
-@bw2test
-def test_naughty_activity_codes():
+def test_naughty_activity_codes(bw_test_fixture):
     db = Database("foo")
     data = {("foo", str(i)): {"name": x} for i, x in enumerate(get_naughty())}
     db.write(data)
     assert set(get_naughty()) == set(x["name"] for x in db)
 
 
-@bw2test
-def test_setup():
+def test_setup(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     d = Database("food")
     d.write(food_data)
 
 
-@bw2test
-def test_rename():
+def test_rename(bw_test_fixture):
     d = Database("biosphere")
     d.write(biosphere)
     d = Database("food")
@@ -311,8 +285,7 @@ def test_rename():
             assert exc["input"][0] in ("biosphere", "buildings")
 
 
-@bw2test
-def test_exchange_save():
+def test_exchange_save(bw_test_fixture):
     database = Database("testy")
     data = {
         ("testy", "A"): {},
@@ -339,7 +312,6 @@ def test_exchange_save():
     assert exc["amount"] == 2
 
 
-@bw2test
 @pytest.mark.skip()
 def test_dirty_activities():
     database = Database("testy")
@@ -365,8 +337,7 @@ def test_dirty_activities():
     assert lca.supply_array[lca.activity_dict[("testy", "A")]] == 0.5
 
 
-@bw2test
-def test_process_invalid_exchange_value():
+def test_process_invalid_exchange_value(bw_test_fixture):
     database = Database("testy")
     data = {
         ("testy", "A"): {},
@@ -381,8 +352,7 @@ def test_process_invalid_exchange_value():
         database.write(data)
 
 
-@bw2test
-def test_untyped_exchange_error():
+def test_untyped_exchange_error(bw_test_fixture):
     database = Database("testy")
     database_data = {
         ("testy", "A"): {"exchanges": [{"amount": 1, "input": ("testy", "A")}]},
@@ -391,8 +361,7 @@ def test_untyped_exchange_error():
         database.write(database_data, process=False)
 
 
-@bw2test
-def test_no_input_raises_invalid_exchange():
+def test_no_input_raises_invalid_exchange(bw_test_fixture):
     database = Database("testy")
     database_data = {
         ("testy", "A"): {"exchanges": [{"amount": 1}]},
@@ -401,8 +370,7 @@ def test_no_input_raises_invalid_exchange():
         database.write(database_data, process=False)
 
 
-@bw2test
-def test_no_amount_raises_invalid_exchange():
+def test_no_amount_raises_invalid_exchange(bw_test_fixture):
     database = Database("testy")
     database_data = {
         ("testy", "A"): {"exchanges": [{"input": ("testy", "A"), "type": "technosphere"}]},
@@ -411,8 +379,7 @@ def test_no_amount_raises_invalid_exchange():
         database.write(database_data, process=False)
 
 
-@bw2test
-def test_zero_amount_is_valid_exchange():
+def test_zero_amount_is_valid_exchange(bw_test_fixture):
     database = Database("testy")
     database_data = {
         ("testy", "A"): {
@@ -422,8 +389,7 @@ def test_zero_amount_is_valid_exchange():
     database.write(database_data, process=False)
 
 
-@bw2test
-def test_process_checks_process_type():
+def test_process_checks_process_type(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -436,8 +402,7 @@ def test_process_checks_process_type():
     assert database.process() is None
 
 
-@bw2test
-def test_geomapping_array_includes_only_processes():
+def test_geomapping_array_includes_only_processes(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -455,8 +420,7 @@ def test_geomapping_array_includes_only_processes():
     assert array[0]["col"] == geomapping["bar"]
 
 
-@bw2test
-def test_geomapping_array_normalization():
+def test_geomapping_array_normalization(bw_test_fixture):
     database = Database("a database")
     database.register(location_normalization={"RoW": "GLO"})
     database.write(
@@ -476,8 +440,7 @@ def test_geomapping_array_normalization():
     assert array[1]["col"] == geomapping["GLO"]
 
 
-@bw2test
-def test_processed_array():
+def test_processed_array(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -505,8 +468,7 @@ def test_processed_array():
     assert array[0]["uncertainty_type"] == 7
 
 
-@bw2test
-def test_processed_array_with_metadata():
+def test_processed_array_with_metadata(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -553,8 +515,7 @@ def test_processed_array_with_metadata():
     )
 
 
-@bw2test
-def test_processed_array_with_non_process_nodes():
+def test_processed_array_with_non_process_nodes(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -593,14 +554,12 @@ def test_processed_array_with_non_process_nodes():
     assert array.shape == (1,)
 
 
-@bw2test
-def test_base_class():
+def test_base_class(bw_test_fixture):
     database = Database("a database")
     assert database._metadata is databases
 
 
-@bw2test
-def test_find_dependents():
+def test_find_dependents(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -654,8 +613,7 @@ def test_find_dependents():
     assert database.find_dependents(ignore={"awkward"}) == ["biosphere", "foo"]
 
 
-@bw2test
-def test_set_dependents():
+def test_set_dependents(bw_test_fixture):
     foo = Database("foo")
     foo.write(
         {
@@ -710,8 +668,7 @@ def test_set_dependents():
     assert databases["a database"]["depends"] == ["biosphere", "foo"]
 
 
-@bw2test
-def test_process_without_exchanges_still_in_processed_array():
+def test_process_without_exchanges_still_in_processed_array(bw_test_fixture):
     database = Database("a database")
     database.write({("a database", "foo"): {}})
 
@@ -721,8 +678,7 @@ def test_process_without_exchanges_still_in_processed_array():
     assert array.shape == (1,)
 
 
-@bw2test
-def test_random_empty():
+def test_random_empty(bw_test_fixture):
     database = Database("a database")
     database.write({})
     with warnings.catch_warnings() as w:
@@ -730,8 +686,7 @@ def test_random_empty():
         assert database.random() is None
 
 
-@bw2test
-def test_new_node():
+def test_new_node(bw_test_fixture):
     database = Database("a database")
     database.register()
     act = database.new_node("foo", this="that", name="something")
@@ -744,8 +699,7 @@ def test_new_node():
     assert act["this"] == "that"
 
 
-@bw2test
-def test_new_node_code_optional():
+def test_new_node_code_optional(bw_test_fixture):
     database = Database("a database")
     database.register()
     act = database.new_node(this="that", name="something")
@@ -758,16 +712,14 @@ def test_new_node_code_optional():
     assert act["this"] == "that"
 
 
-@bw2test
-def test_new_node_warn_type_technosphere():
+def test_new_node_warn_type_technosphere(bw_test_fixture):
     database = Database("a database")
     database.register()
     with pytest.warns(UserWarning, match="\nEdge type label used for node"):
         database.new_node(this="that", name="something", type="technosphere").save()
 
 
-@bw2test
-def test_new_node_error():
+def test_new_node_error(bw_test_fixture):
     database = Database("a database")
     database.register()
     act = database.new_node("foo", this="that", name="something")
@@ -777,8 +729,7 @@ def test_new_node_error():
         database.new_node("foo")
 
 
-@bw2test
-def test_new_activity():
+def test_new_activity(bw_test_fixture):
     database = Database("a database")
     database.register()
     act = database.new_activity("foo", this="that", name="something")
@@ -791,8 +742,7 @@ def test_new_activity():
     assert act["this"] == "that"
 
 
-@bw2test
-def test_can_split_processes_products():
+def test_can_split_processes_products(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -821,8 +771,7 @@ def test_can_split_processes_products():
     assert array["row"][0] == get_id(("a database", "product"))
 
 
-@bw2test
-def test_sqlite_processed_array_order():
+def test_sqlite_processed_array_order(bw_test_fixture):
     database = Database("testy_new")
     data = {
         ("testy_new", "C"): {},
@@ -877,8 +826,7 @@ def test_sqlite_processed_array_order():
     assert np.allclose(array["col"], [x[1] for x in b])
 
 
-@bw2test
-def test_no_distributions_if_no_uncertainty():
+def test_no_distributions_if_no_uncertainty(bw_test_fixture):
     database = Database("a database")
     database.write(
         {
@@ -900,55 +848,7 @@ def test_no_distributions_if_no_uncertainty():
         package.get_resource("a_database_technosphere_matrix.distributions")
 
 
-@bw2test
-def test_database_delete_parameters():
-    db = Database("example")
-    db.register()
-
-    a = db.new_activity(code="A", name="An activity")
-    a.save()
-    b = db.new_activity(code="B", name="Another activity")
-    b.save()
-    a.new_exchange(amount=0, input=b, type="technosphere", formula="foo * bar + 4").save()
-
-    database_data = [
-        {
-            "name": "red",
-            "formula": "(blue ** 2) / 5",
-        },
-        {"name": "blue", "amount": 12},
-    ]
-    parameters.new_database_parameters(database_data, "example")
-
-    activity_data = [
-        {
-            "name": "reference_me",
-            "formula": "sqrt(red - 20)",
-            "database": "example",
-            "code": "B",
-        },
-        {
-            "name": "bar",
-            "formula": "reference_me + 2",
-            "database": "example",
-            "code": "A",
-        },
-    ]
-    parameters.new_activity_parameters(activity_data, "my group")
-    parameters.add_exchanges_to_group("my group", a)
-
-    assert ActivityParameter.select().count() == 2
-    assert ParameterizedExchange.select().count() == 1
-    assert DatabaseParameter.select().count() == 2
-    assert len(parameters) == 4
-
-    del databases["example"]
-    assert not len(parameters)
-    assert not ParameterizedExchange.select().count()
-
-
-@bw2test
-def test_delete_duplicate_exchanges():
+def test_delete_duplicate_exchanges(bw_test_fixture):
     all_exchanges = lambda db: [exc for ds in db for exc in ds.exchanges()]
 
     db = Database("test-case")
@@ -976,8 +876,7 @@ def test_delete_duplicate_exchanges():
     assert len(all_exchanges(db)) == 3
 
 
-@bw2test
-def test_add_geocollections_dict(capsys):
+def test_add_geocollections_dict(bw_test_fixture, capsys):
     db = Database("test-case")
     db.write(
         {
@@ -994,8 +893,7 @@ def test_add_geocollections_dict(capsys):
     assert "Not able" in capsys.readouterr().out
 
 
-@bw2test
-def test_add_geocollections_list(capsys):
+def test_add_geocollections_list(bw_test_fixture, capsys):
     db = Database("test-case")
     db.write(
         [
@@ -1025,8 +923,7 @@ def test_add_geocollections_list(capsys):
     assert "Not able" in capsys.readouterr().out
 
 
-@bw2test
-def test_set_geocollections(capsys):
+def test_set_geocollections(bw_test_fixture, capsys):
     db = Database("test-case")
     db.write(
         {
@@ -1060,8 +957,7 @@ def test_set_geocollections(capsys):
     assert db.metadata["geocollections"] == ["foo", "this", "world"]
 
 
-@bw2test
-def test_add_geocollections_unable(capsys):
+def test_add_geocollections_unable(bw_test_fixture, capsys):
     db = Database("test-case")
     db.write(
         {
@@ -1073,8 +969,7 @@ def test_add_geocollections_unable(capsys):
     assert "Not able" in capsys.readouterr().out
 
 
-@bw2test
-def test_add_geocollections_no_unable_for_product(capsys):
+def test_add_geocollections_no_unable_for_product(bw_test_fixture, capsys):
     db = Database("test-case")
     db.write(
         {
@@ -1091,8 +986,7 @@ def test_add_geocollections_no_unable_for_product(capsys):
 
 
 @pytest.fixture
-@bw2test
-def df_fixture():
+def df_fixture(bw_test_fixture):
     Database("biosphere").write(biosphere)
     Database("food").write(food_data)
 
@@ -1265,8 +1159,7 @@ def test_nodes_to_dataframe_unsorted(df_fixture):
     assert df.shape == (2, 8)
 
 
-@bw2test
-def test_warn_activity_type():
+def test_warn_activity_type(bw_test_fixture):
     db = Database("test-case")
     data = {
         ("test-case", "1"): {
@@ -1281,8 +1174,7 @@ def test_warn_activity_type():
         db.write(data)
 
 
-@bw2test
-def test_warn_activity_key():
+def test_warn_activity_key(bw_test_fixture):
     db = Database("test-case")
     data = {
         ("test-case", "1"): {
@@ -1299,8 +1191,7 @@ def test_warn_activity_key():
         db.write(data)
 
 
-@bw2test
-def test_no_warn_activity_key_no_check_typos(recwarn):
+def test_no_warn_activity_key_no_check_typos(bw_test_fixture, recwarn):
     db = Database("test-case")
     data = {
         ("test-case", "1"): {
@@ -1316,8 +1207,7 @@ def test_no_warn_activity_key_no_check_typos(recwarn):
     assert not any("Possible incorrect activity key" in str(rec.message) for rec in recwarn)
 
 
-@bw2test
-def test_warn_activity_key_yes_check_typos(recwarn):
+def test_warn_activity_key_yes_check_typos(bw_test_fixture, recwarn):
     db = Database("test-case")
     data = {
         ("test-case", "1"): {
@@ -1333,8 +1223,7 @@ def test_warn_activity_key_yes_check_typos(recwarn):
     assert any("Possible incorrect activity key" in str(rec.message) for rec in recwarn)
 
 
-@bw2test
-def test_warn_exchange_type():
+def test_warn_exchange_type(bw_test_fixture):
     db = Database("test-case")
     data = {
         ("test-case", "0"): {
@@ -1361,8 +1250,7 @@ def test_warn_exchange_type():
         db.write(data)
 
 
-@bw2test
-def test_warn_exchange_key():
+def test_warn_exchange_key(bw_test_fixture):
     db = Database("test-case")
     data = {
         ("test-case", "0"): {
@@ -1388,8 +1276,7 @@ def test_warn_exchange_key():
         db.write(data)
 
 
-@bw2test
-def test_iotable_sourced_project():
+def test_iotable_sourced_project(bw_test_fixture):
     projects.dataset.set_sourced()
     with pytest.raises(ValueError):
         Database("foo", backend="iotable")

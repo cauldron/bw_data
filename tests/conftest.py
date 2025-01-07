@@ -4,6 +4,8 @@ import sqlite3
 
 import pytest
 
+from bw2data.tests import bw_test_fixture
+
 sqlite3.enable_callback_tracebacks(True)
 
 
